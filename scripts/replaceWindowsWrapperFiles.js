@@ -46,23 +46,23 @@ function updateManifestFile(manifestPath) {
         //Windows is the BOM. Skip the Byte Order Mark.
         contents = contents.substring(contents.indexOf('<'));
     }
-    
+
     var startPage = "www/wrapper.html";
-    var manifest =  new etree.ElementTree(etree.XML(contents));   
+    var manifest =  new etree.ElementTree(etree.XML(contents));
     var appNode = manifest.find('.//Application');
-    
+
     appNode.attrib.StartPage = startPage;
-    
+
     // Write out manifest
     fs.writeFileSync(manifestPath, manifest.write({indent: 4}), 'utf-8');
 }
 
-function updateWindowsManifests() {  
+function updateWindowsManifests() {
   var MANIFEST_WINDOWS8   = 'package.windows80.appxmanifest',
       MANIFEST_WINDOWS    = 'package.windows.appxmanifest',
       MANIFEST_PHONE      = 'package.phone.appxmanifest',
       MANIFEST_WINDOWS10  = 'package.windows10.appxmanifest';
-  
+
     // Apply appxmanifest changes
     [ MANIFEST_WINDOWS,
       MANIFEST_WINDOWS8,
@@ -75,7 +75,7 @@ function updateWindowsManifests() {
 
 module.exports = function (context) {
   projectRoot = context.opts.projectRoot;
-  
+
   // if the windows folder does not exist, cancell the script
   var windowsPath = path.join(projectRoot, "platforms","windows");
   if (!fs.existsSync(windowsPath)) {
@@ -83,9 +83,9 @@ module.exports = function (context) {
   }
 
   etree = context.requireCordovaModule('cordova-lib/node_modules/elementtree');
-  
+
   // move contents of the assets folder to the windows platform dir
-  var Q = context.requireCordovaModule('q');
+  var Q = require('q');
 
   var filename = "wrapper";
 
@@ -128,9 +128,9 @@ module.exports = function (context) {
         }
 
         console.log("Finished copying wrapper css file for the windows platform.");
-        
+
         updateWindowsManifests();
-        
+
         task.resolve();
       });
     });

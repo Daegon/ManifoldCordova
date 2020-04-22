@@ -70,7 +70,7 @@ function ensurePathExists(pathName, callback) {
 function downloadImage(imageUrl, imagesPath, imageSrc) {
   var deferral = new Q.defer();
   pendingTasks.push(deferral.promise);
-  
+
   ensurePathExists(imagesPath, function(err) {
     if (err && err.code !== 'EEXIST') {
       return logger.error("ERROR: Failed to create directory at: " + imagesPath + ' - ' + err.message);
@@ -90,7 +90,7 @@ function downloadImage(imageUrl, imagesPath, imageSrc) {
 
         deferral.resolve(data);
     });
-  });          
+  });
 }
 
 function writeEmbeddedImage(imageFilename, embeddedImage) {
@@ -127,7 +127,7 @@ function processImageList(manifest, images, baseUrl) {
 
       if (image.src.match('^' + dataUriFormat)) {
         embeddedIcon = image.src;
-        imageFilename = path.join(projectRoot, image.fileName || '/embedded/' + newGuid() + '.png');        
+        imageFilename = path.join(projectRoot, image.fileName || '/embedded/' + newGuid() + '.png');
         image.src = url.parse(imageFilename.replace(projectRoot, '')).pathname;
       } else {
         var imageUrl = url.resolve(baseUrl, image.src);
@@ -174,26 +174,26 @@ function configureParser(context) {
         // Fallback to old location of config parser (old versions of cordova-lib)
         ConfigParser = context.requireCordovaModule('cordova-lib/src/configparser/ConfigParser');
     }
-    
-    etree = context.requireCordovaModule('elementtree');
+
+    etree = require('elementtree');
 
     var xml = cordova_util.projectConfig(projectRoot);
-    config = createConfigParser(xml, etree, ConfigParser);   
+    config = createConfigParser(xml, etree, ConfigParser);
 }
 
 function processAccessRules(manifest) {
     if (manifest && manifest.start_url) {
-  
+
         // Remove previous rules added by the hook
         config.removeElements('.//allow-intent[@hap-rule=\'yes\']');
         config.removeElements('.//allow-navigation[@hap-rule=\'yes\']');
         config.removeElements('.//access[@hap-rule=\'yes\']');
-    
+
         // Remove "generic" rules to open external URLs outside the app
         config.removeElements('.//allow-intent[@href=\'http://*/*\']');
         config.removeElements('.//allow-intent[@href=\'https://*/*\']');
         config.removeElements('.//allow-intent[@href=\'*\']');
-        
+
         // determine base rule based on the start_url and the scope
         var baseUrlPattern = manifest.start_url;
         if (manifest.scope && manifest.scope.length) {
@@ -204,42 +204,42 @@ function processAccessRules(manifest) {
               baseUrlPattern = url.resolve(baseUrlPattern, manifest.scope);
             }
         }
-        
+
         // If there are no wildcards in the pattern, add '*' at the end
         if (baseUrlPattern.indexOf('*') === -1) {
             baseUrlPattern = url.resolve(baseUrlPattern, '*');
         }
-               
+
         // add base rule as a navigation rule
         var navigationBaseRule = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
         navigationBaseRule.set('hap-rule','yes');
         navigationBaseRule.set('href', baseUrlPattern);
-        
+
         var baseUrl = baseUrlPattern.substring(0, baseUrlPattern.length - 1);;
-    
+
         // add additional navigation rules from mjs_access_whitelist
         // TODO: mjs_access_whitelist is deprecated. Should be removed in future versions
         if (manifest.mjs_access_whitelist && manifest.mjs_access_whitelist instanceof Array) {
             manifest.mjs_access_whitelist.forEach(function (item) {
                 // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
-                if (item.url.indexOf(baseUrl) !== 0 ) {  
+                if (item.url.indexOf(baseUrl) !== 0 ) {
                     // add as a navigation rule
                     var navigationEl = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
                     navigationEl.set('hap-rule','yes');
-                    navigationEl.set('href', item.url);  
+                    navigationEl.set('href', item.url);
                 }
             });
         }
-        
+
         // add additional navigation rules from mjs_extended_scope
         if (manifest.mjs_extended_scope && manifest.mjs_extended_scope instanceof Array) {
             manifest.mjs_extended_scope.forEach(function (item) {
                 // To avoid duplicates, add the rule only if it does not have the base URL as a prefix
-                if (item.url.indexOf(baseUrl) !== 0 ) {  
+                if (item.url.indexOf(baseUrl) !== 0 ) {
                     // add as a navigation rule
                     var navigationEl = new etree.SubElement(config.doc.getroot(), 'allow-navigation');
                     navigationEl.set('hap-rule','yes');
-                    navigationEl.set('href', item.url);  
+                    navigationEl.set('href', item.url);
                 }
             });
         }
@@ -280,7 +280,7 @@ function processImagesBySize(platform, manifestImages, splashScreenSizes, iconSi
         if (!isValidFormat(element, validFormats)) {
           return;
         }
-        
+
         // Don't process the icon if the icon file does not exist
         if (!fs.existsSync(path.join(projectRoot, element.src))) {
           return;
@@ -336,7 +336,7 @@ function processImagesByDensity(platform, manifestImages, screenSizeToDensityMap
         if (!isValidFormat(element, validFormats)) {
             return;
         }
-        
+
         // Don't process the icon if the icon file does not exist
         if (!fs.existsSync(path.join(projectRoot, element.src))) {
             return;
@@ -385,17 +385,17 @@ function processImagesByDensity(platform, manifestImages, screenSizeToDensityMap
     });
 }
 
-function processDefaultIconsByDensity(platform, screenDensities, iconDensities) {   
+function processDefaultIconsByDensity(platform, screenDensities, iconDensities) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
         root = etree.SubElement(config.doc.getroot(), 'platform');
         root.set('name', platform);
     }
-    
+
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
-    
+
     iconDensities.forEach(function (iconDensity) {
         for (var icon, i = 0; i < platformIcons.length; i++) {
             if (iconDensity === platformIcons[i].get('density')) {
@@ -403,17 +403,17 @@ function processDefaultIconsByDensity(platform, screenDensities, iconDensities) 
                 break;
             }
         }
-               
+
         if (!icon) {
             var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconDensity + '.png';
-            
+
             icon = etree.SubElement(root, 'icon');
             icon.set('hap-default-image', 'yes');
             icon.set('density', iconDensity);
             icon.set('src', iconSrc);
         }
     });
-    
+
     screenDensities.forEach(function (screenDensity) {
         for (var screen, i = 0; i < platformScreens.length; i++) {
             if (screenDensity === platformScreens[i].get('density')) {
@@ -421,72 +421,72 @@ function processDefaultIconsByDensity(platform, screenDensities, iconDensities) 
                 break;
             }
         }
-        
+
         if (!screen) {
             var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenDensity + '.png';
-          
+
             screen = etree.SubElement(root, 'splash');
             screen.set('hap-default-image', 'yes');
             screen.set('density', screenDensity);
-            screen.set('src', screenSrc); 
+            screen.set('src', screenSrc);
         }
     });
 }
 
-function processDefaultIconsBySize(platform, screenSizes, iconSizes) {   
+function processDefaultIconsBySize(platform, screenSizes, iconSizes) {
     // get platform section and create it if it does not exist
     var root = config.doc.find('platform[@name=\'' + platform + '\']');
     if (!root) {
         root = etree.SubElement(config.doc.getroot(), 'platform');
         root.set('name', platform);
     }
-    
+
     var platformIcons = root.findall('icon');
     var platformScreens = root.findall('splash');
-    
+
     iconSizes.forEach(function (iconSize) {
         var dimensions = iconSize.split('x');
         var iconWidth = dimensions[0];
         var iconHeight = dimensions[1];
-      
+
         for (var icon, i = 0; i < platformIcons.length; i++) {
             if (iconWidth === platformIcons[i].get('width') && iconHeight === platformIcons[i].get('height')) {
                 icon = platformIcons[i];
                 break;
             }
         }
-               
+
         if (!icon) {
             var iconSrc = defaultIconsBaseDir + '/' + platform + '/' + iconSize + '.png';
-            
+
             icon = etree.SubElement(root, 'icon');
-            icon.set('hap-default-image', 'yes');            
+            icon.set('hap-default-image', 'yes');
             icon.set('width', iconWidth);
             icon.set('height', iconHeight);
             icon.set('src', iconSrc);
         }
     });
-    
+
     screenSizes.forEach(function (screenSize) {
         var dimensions = screenSize.split('x');
         var screenWidth = dimensions[0];
         var screenHeight = dimensions[1];
-      
+
         for (var screen, i = 0; i < platformScreens.length; i++) {
             if (screenWidth === platformScreens[i].get('width') && screenHeight === platformScreens[i].get('height')) {
                 screen = platformScreens[i];
                 break;
             }
         }
-        
+
         if (!screen) {
             var screenSrc = defaultIconsBaseDir + '/' + platform + '/' + screenSize + '.png';
-          
+
             screen = etree.SubElement(root, 'splash');
             screen.set('hap-default-image', 'yes');
             screen.set('width', screenWidth);
             screen.set('height', screenHeight);
-            screen.set('src', screenSrc); 
+            screen.set('src', screenSrc);
         }
     });
 }
@@ -557,7 +557,7 @@ function processAndroidIcons(manifestIcons, manifestSplashScreens) {
         "320x480": "port-mdpi",
         "720x1280":"port-xhdpi"
     };
-    
+
     var iconDensities = [];
     for (var size in iconSizeToDensityMap) {
         if (iconSizeToDensityMap.hasOwnProperty(size)) {
@@ -576,9 +576,9 @@ function processAndroidIcons(manifestIcons, manifestSplashScreens) {
       'png',
       'image/png'
     ];
-    
-    processImagesByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);   
-    processImagesByDensity('android', manifestSplashScreens, screenSizeToDensityMap, [], dppxToDensityMap, validFormats);   
+
+    processImagesByDensity('android', manifestIcons, screenSizeToDensityMap, iconSizeToDensityMap, dppxToDensityMap, validFormats);
+    processImagesByDensity('android', manifestSplashScreens, screenSizeToDensityMap, [], dppxToDensityMap, validFormats);
     processDefaultIconsByDensity('android', screenDensities, iconDensities);
 }
 
@@ -627,7 +627,7 @@ function processWindowsPhoneIcons(manifestIcons, manifestSplashScreens) {
 module.exports = function (context) {
     logger.log('Updating Cordova configuration from W3C manifest...');
 
-    Q = context.requireCordovaModule('q');
+    Q = require('q');
 
     // Get base path for default icons
     defaultIconsBaseDir = 'plugins/' + context.opts.plugin.id + '/assets/defaultImages';
@@ -638,7 +638,7 @@ module.exports = function (context) {
 
     // read W3C manifest
     var task = Q.defer();
-    
+
     var manifestPath = path.join(projectRoot, 'manifest.json');
     fs.readFile(manifestPath, function (err, data) {
       if (err) {
@@ -658,7 +658,7 @@ module.exports = function (context) {
         var manifest = JSON.parse(manifestJson);
 
         // The start_url member is required and must be a full URL.
-        // Even though a relative URL is a valid according to the W3C spec, a full URL 
+        // Even though a relative URL is a valid according to the W3C spec, a full URL
         // is needed because the plugin cannot determine the manifest's origin.
         var start_url;
 		var from_local = false;
@@ -702,11 +702,11 @@ module.exports = function (context) {
           }
 
         })(manifest.orientation));
-        
+
         if (manifest.display) {
           config.setPreference('Fullscreen', manifest.display == 'fullscreen' ? 'true' : 'false');
         }
-        
+
         if (manifest.description) {
             config.setElement('description', manifest.description);
 		}
@@ -726,25 +726,25 @@ module.exports = function (context) {
         processAccessRules(manifest);
 
         // Obtain and download the icons and splash screens specified in the manifest.
-        // Currently, splash screens specified in the splash_screens section of the manifest 
+        // Currently, splash screens specified in the splash_screens section of the manifest
         // take precedence over similarly sized splash screens in the icons section.
         var manifestIcons = processImageList(manifest, manifest.icons, manifest.start_url);
         var manifestSplashScreens = processImageList(manifest, manifest.splash_screens, manifest.start_url);
 
-        Q.allSettled(pendingTasks).then(function () {            
+        Q.allSettled(pendingTasks).then(function () {
           // Configure the icons once all icon files are downloaded
           processiOSIcons(manifestIcons, manifestSplashScreens);
           processAndroidIcons(manifestIcons, manifestSplashScreens);
           processWindowsIcons(manifestIcons, manifestSplashScreens);
           processWindowsPhoneIcons(manifestIcons, manifestSplashScreens);
-          
+
           // save the updated configuration
           config.write();
         }).then(function() {
           //ovewrite the updated w3c manifest if this is the case
           if (manifest.__updated) {
             logger.log('Manifest has been updated');
-            
+
             delete(manifest.__updated);
 
             var manifestFiles = [ manifestPath + '.updated', appManifestPath + '.updated' ];
